@@ -1,60 +1,78 @@
-# .NET — Mapper (Object ↔ Row)
+# .NET — Raw vs Mapper vs LINQ
 
 [⬅ Back to README](../../README.md)
 
 ## Problem Summary
 
-`Cassandra.Mapping.Mapper` maps POCOs to tables (like a micro-ORM). It still generates **prepared statements** and still requires the partition key in `WHERE` — it does not hide the data model.
+Three ways to query from C#. Same latency, but they differ in **prepared statements** and **tombstones from `null`** — measured below on Cassandra 5.0.
 
 ## Mermaid Diagram
 
 ```mermaid
 flowchart LR
-    POCO["class Reading<br/>DeviceId · Day · Ts · Temperature"] --> MAP["Map of Reading<br/>table + PK + column names"]
-    MAP --> M["IMapper"]
-    M -->|"FetchAsync: WHERE … args"| PS[auto-prepared SELECT]
-    M -->|"InsertAsync(reading)"| PI[auto-prepared INSERT]
+    POCO["Reading { H = null }"] --> RAW["Raw PreparedStatement<br/>Bind(..., Unset.Value)"]
+    POCO --> MAP["Mapper<br/>InsertAsync(r)"]
+    POCO --> LINQ["LINQ Table of T<br/>Insert(r).ExecuteAsync()"]
+    RAW --> OK["✅ prepared · 0 tombstones"]
+    MAP --> T1["✅ prepared · ❌ 1 tombstone/row"]
+    LINQ --> T2["❌ not prepared · ❌ 1 tombstone/row"]
+    MAP -.->|"insertNulls: false"| OK
+    LINQ -.->|"Insert(r, false) → 0 tombstones"| T3["❌ not prepared"]
 ```
 
 ## Concrete Example
 
-```csharp
-// samples/CassandraDemo/IotRepository.cs
-MappingConfiguration.Global.Define(
-    new Map<Reading>()
-        .KeyspaceName("iot")
-        .TableName("readings_by_device_day")
-        .PartitionKey(r => r.DeviceId, r => r.Day)
-        .ClusteringKey(r => r.Ts, SortOrder.Descending)
-        .Column(r => r.DeviceId, c => c.WithName("device_id"))
-        .Column(r => r.Day, c => c.WithName("day"))
-        .Column(r => r.Ts, c => c.WithName("ts"))
-        .Column(r => r.Temperature, c => c.WithName("temperature"))
-        .Column(r => r.Humidity, c => c.WithName("humidity")));
-
-IMapper mapper = new Mapper(session);
-
-var rows = await mapper.FetchAsync<Reading>(
-    "WHERE device_id = ? AND day = ? AND ts >= ? AND ts < ?", deviceId, day, from, to);
-List<Reading> readings = rows.ToList();   // ⚠️ forward-only: a 2nd enumeration returns 0 rows
-```
+Same insert + same single-partition read, three ways:
 
 ```csharp
-// ❌ real bug found while building this sample
-var readings = await mapper.FetchAsync<Reading>(...);
-Console.WriteLine(readings.Count());   // 10 — consumes the RowSet
-Console.WriteLine(readings.First());   // InvalidOperationException: Sequence contains no elements
+// 1. Raw
+await session.ExecuteAsync(insert.Bind(id, ts, t, h.HasValue ? h.Value : Unset.Value));
+var rs = await session.ExecuteAsync(select.Bind(id, from));
+
+// 2. Mapper (Cassandra.Mapping)
+await mapper.InsertAsync(reading, insertNulls: false);           // default insertNulls = true ❌
+var list = (await mapper.FetchAsync<Reading>("WHERE id = ? AND ts >= ?", id, from)).ToList();
+
+// 3. LINQ (Cassandra.Data.Linq)
+await table.Insert(reading, insertNulls: false).ExecuteAsync();    // default true ❌
+var list2 = (await table.Where(r => r.Id == id && r.Ts >= from).ExecuteAsync()).ToList();
 ```
 
-| Option | Control | Boilerplate |
-|---|---|---|
-| Raw `PreparedStatement` | full (Unset, idempotence, CL per call) | more |
-| **Mapper** | good (`CqlQueryOptions`) | less |
-| LINQ `Table<T>` | limited | least |
+**Measured** — 2,000 ops each, single node in Docker, `H = null`:
+
+| Approach | Insert µs/op | Read µs/op | Prepared on server | Tombstones / 100 rows |
+|---|---:|---:|:---:|---:|
+| Raw + `Unset.Value` | 2,803 | 2,771 | ✅ | **0** |
+| Mapper (default) | 2,682 | 2,437 | ✅ | **100** ❌ |
+| Mapper `insertNulls: false` | 2,316 | — | ✅ new statement per null combination | **0** |
+| LINQ (default) | 2,397 | 2,555 | ❌ re-parsed every call | **100** ❌ |
+| LINQ `Insert(r, false)` | — | — | ❌ | **0** |
+
+Latency ≈ equal (network-bound) → choose by **correctness**, not speed.
+
+| Capability | Raw | Mapper | LINQ |
+|---|:---:|:---:|:---:|
+| Skip nulls (no tombstone) | ✅ `Unset.Value` | ✅ `insertNulls: false` | ✅ `Insert(r, false)` |
+| Per-query CL | ✅ `SetConsistencyLevel` | ✅ `CqlQueryOptions` | ✅ `SetConsistencyLevel` |
+| Paging state | ✅ | ✅ `FetchPageAsync` | ✅ `ExecutePagedAsync` |
+| LWT | ✅ `[applied]` | ✅ `InsertIfNotExistsAsync` → `AppliedInfo<T>` | ✅ `Insert(r).IfNotExists()` |
+| Batch | ✅ `BatchStatement` | ✅ `mapper.CreateBatch()` | ✅ `session.CreateBatch().Append(...)` |
+| Compile-time checked query | ❌ string | ❌ string | ✅ lambda |
+| Boilerplate | high | medium | low |
+
+## Pitfalls
+
+- ❌ `Count()` then `First()` on `FetchAsync` result → 0 rows. ✅ `.ToList()` once (forward-only `RowSet`).
+- ❌ Mapper `InsertAsync(r)` / LINQ `Insert(r)` with nullable fields → tombstone per null. ✅ pass `insertNulls: false`.
+- ⚠️ `insertNulls: false` prepares one statement per null combination (5 nullable columns → up to 32).
+- ❌ LINQ on hot paths → not prepared, re-parsed every call. ✅ Raw or Mapper.
+
+Mapping config used here: [IotRepository.cs](../../samples/CassandraDemo/IotRepository.cs)
 
 ## Reference
 
 - [C# driver: Mapper](https://docs.datastax.com/en/developer/csharp-driver/latest/features/components/mapper/index.html)
+- [C# driver: LINQ](https://docs.datastax.com/en/developer/csharp-driver/latest/features/components/linq/index.html)
 
 ---
 

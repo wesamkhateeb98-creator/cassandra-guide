@@ -84,7 +84,7 @@ flowchart LR
 | [04](docs/07-cql-dotnet/04-dotnet-prepared-statements.md) | .NET: Prepared statements |
 | [05](docs/07-cql-dotnet/05-dotnet-paging.md) | .NET: Paging |
 | [06](docs/07-cql-dotnet/06-dotnet-batch-and-lwt.md) | .NET: Batch, counter, LWT |
-| [07](docs/07-cql-dotnet/07-dotnet-mapper.md) | .NET: Mapper |
+| [07](docs/07-cql-dotnet/07-dotnet-mapper.md) | .NET: Raw vs Mapper vs LINQ (measured) |
 
 ## 08 · Best Practices
 | File | Practice |
