@@ -5,7 +5,7 @@
 ```mermaid
 flowchart LR
     subgraph Now["✅ Done"]
-        A[54 one-topic docs] --- B[2 modeling examples] --- C[.NET 10 sample]
+        A[57 one-topic docs] --- B[2 modeling examples] --- C[.NET 10 sample]
     end
     subgraph Next["⏭ Next"]
         D[3-node lab] --- E[TRACING evidence] --- F[Testcontainers tests]

@@ -56,7 +56,10 @@ flowchart LR
 | [02](docs/04-read-write/02-read-path.md) | Read path |
 | [03](docs/04-read-write/03-delete-path.md) | Delete path |
 | [04](docs/04-read-write/04-lightweight-transactions.md) | Lightweight transactions (Paxos) |
-| [05](docs/04-read-write/05-batches.md) | Batches |
+| [05](docs/04-read-write/05-batches.md) | Batches — overview & decision |
+| [06](docs/04-read-write/06-logged-batch.md) | Logged batch (batchlog) |
+| [07](docs/04-read-write/07-unlogged-batch.md) | Unlogged batch |
+| [08](docs/04-read-write/08-counter-batch.md) | Counter batch |
 
 ## 05 · Cost
 | File | Topic |
@@ -128,7 +131,7 @@ alerts today for device-6273: 4
 
 ```text
 cassandra-guide/
-├── docs/                   # 54 one-topic files
+├── docs/                   # 57 one-topic files
 ├── cql/schema.cql          # keyspaces + tables for both examples
 ├── cql/queries.cql         # queries to try in cqlsh
 ├── samples/CassandraDemo/  # .NET 10 console app (CassandraCSharpDriver)
