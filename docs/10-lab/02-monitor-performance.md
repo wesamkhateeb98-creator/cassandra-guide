@@ -136,6 +136,8 @@ Tombstones stay until `gc_grace_seconds` (10 days) has passed **and** compaction
 
 Outputs marked "measured" come from this guide's single node; the others are illustrative.
 
+Next → [03 · Load test](03-load-test.md)
+
 ## Reference
 
 - [Tracing (cqlsh)](https://cassandra.apache.org/doc/latest/cassandra/managing/tools/cqlsh.html#tracing)

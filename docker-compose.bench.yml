@@ -1,0 +1,34 @@
+# NoSQLBench against the running cluster (docker-compose.cluster.yml) — 10 000 ops by default.
+# Guide: docs/10-lab/03-load-test.md
+#
+#   docker compose -f docker-compose.bench.yml run --rm nb                      # scenario "slug"
+#   docker compose -f docker-compose.bench.yml run --rm nb /workloads/shortly.yaml user   host=cass1 localdc=dc1
+#   docker compose -f docker-compose.bench.yml run --rm nb /workloads/shortly.yaml clicks host=cass1 localdc=dc1 cycles=50000
+#
+# Single node (docker-compose.yml) instead of the cluster:
+#   NB_NETWORK=cassandra-guide_default docker compose -f docker-compose.bench.yml run --rm nb \
+#     /workloads/shortly.yaml slug host=cassandra localdc=dc1
+
+services:
+  nb:
+    image: nosqlbench/nosqlbench:latest
+    volumes:
+      - ./bench:/workloads:ro
+      - ./bench/results:/results
+    command:
+      - /workloads/shortly.yaml
+      - slug
+      - host=cass1
+      - localdc=dc1
+      - --progress
+      - console:5s
+      - --report-summary-to
+      - stdout:0
+      - --report-csv-to
+      - /results
+    networks: [cassandra]
+
+networks:
+  cassandra:
+    external: true
+    name: ${NB_NETWORK:-cassandra-guide_cassandra-net}   # network created by docker-compose.cluster.yml

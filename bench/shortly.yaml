@@ -1,0 +1,81 @@
+# NoSQLBench workload for the Shortly tables.
+# Scenarios (pick one on the command line):
+#   slug   → 10k INSERT into links_by_slug, then 10k SELECT by slug (random existing slugs)
+#   user   → 10k INSERT into links_by_user spread over 10 users (≈1 000 rows per partition), then reads
+#   clicks → 10k counter increments on 100 slugs
+# Change the count with cycles=N on the command line.
+
+description: Shortly load test — links_by_slug · links_by_user · link_clicks
+
+scenarios:
+  slug:
+    schema: run driver=cqld4 tags==block:schema threads=1 cycles=UNDEF
+    write:  run driver=cqld4 tags==block:write_slug cycles=TEMPLATE(cycles,10000) threads=auto
+    read:   run driver=cqld4 tags==block:read_slug  cycles=TEMPLATE(cycles,10000) threads=auto
+  user:
+    schema: run driver=cqld4 tags==block:schema threads=1 cycles=UNDEF
+    write:  run driver=cqld4 tags==block:write_user cycles=TEMPLATE(cycles,10000) threads=auto
+    read:   run driver=cqld4 tags==block:read_user  cycles=TEMPLATE(cycles,10000) threads=auto
+  clicks:
+    schema: run driver=cqld4 tags==block:schema threads=1 cycles=UNDEF
+    write:  run driver=cqld4 tags==block:clicks cycles=TEMPLATE(cycles,10000) threads=auto
+
+bindings:
+  # cycle N always produces the same slug → reads hit rows that were written
+  slug:       Hash(); ToString() -> String
+  read_slug:  Hash(); Mod(TEMPLATE(cycles,10000)); Hash(); ToString() -> String   # random index among written cycles
+  url:        Hash(); Mod(1000000); ToString(); Prefix('https://bench.example/p/') -> String
+  user_id:    Mod(10); ToHashedUUID() -> java.util.UUID
+  read_user:  Hash(); Mod(10); ToHashedUUID() -> java.util.UUID
+  click_slug: Mod(100); Hash(); ToString() -> String
+
+blocks:
+  schema:
+    params:
+      prepared: false
+    ops:
+      keyspace: |
+        CREATE KEYSPACE IF NOT EXISTS shortly
+          WITH replication = {'class': 'NetworkTopologyStrategy', 'dc1': 1};
+      links_by_slug: |
+        CREATE TABLE IF NOT EXISTS shortly.links_by_slug (
+          slug text PRIMARY KEY, url text, user_id uuid, created_at timestamp);
+      links_by_user: |
+        CREATE TABLE IF NOT EXISTS shortly.links_by_user (
+          user_id uuid, created_at timestamp, slug text, url text,
+          PRIMARY KEY ((user_id), created_at, slug))
+          WITH CLUSTERING ORDER BY (created_at DESC, slug ASC);
+      link_clicks: |
+        CREATE TABLE IF NOT EXISTS shortly.link_clicks (slug text PRIMARY KEY, clicks counter);
+
+  write_slug:
+    params: { prepared: true, cl: LOCAL_QUORUM }
+    ops:
+      insert_slug: |
+        INSERT INTO shortly.links_by_slug (slug, url, user_id, created_at)
+        VALUES ({slug}, {url}, {user_id}, toTimestamp(now())) USING TTL 604800;
+
+  read_slug:
+    params: { prepared: true, cl: LOCAL_QUORUM }
+    ops:
+      select_slug: |
+        SELECT url, TTL(url) FROM shortly.links_by_slug WHERE slug = {read_slug};
+
+  write_user:
+    params: { prepared: true, cl: LOCAL_QUORUM }
+    ops:
+      insert_user: |
+        INSERT INTO shortly.links_by_user (user_id, created_at, slug, url)
+        VALUES ({user_id}, toTimestamp(now()), {slug}, {url}) USING TTL 604800;
+
+  read_user:
+    params: { prepared: true, cl: LOCAL_QUORUM }
+    ops:
+      select_user: |
+        SELECT slug, url FROM shortly.links_by_user WHERE user_id = {read_user} LIMIT 20;
+
+  clicks:
+    params: { prepared: true, cl: LOCAL_QUORUM }
+    ops:
+      increment: |
+        UPDATE shortly.link_clicks SET clicks = clicks + 1 WHERE slug = {click_slug};

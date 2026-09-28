@@ -4,3 +4,6 @@ obj/
 .vscode/
 *.user
 .DS_Store
+
+# NoSQLBench output
+bench/results/

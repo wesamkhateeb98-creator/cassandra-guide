@@ -114,6 +114,7 @@ flowchart LR
 |---|---|
 | [01](docs/10-lab/01-five-node-cluster.md) | Run a 5-node cluster: seeds, RF 3, kill a replica, `QUORUM` vs `ALL` |
 | [02](docs/10-lab/02-monitor-performance.md) | Monitor: `TRACING ON`, size per node, tombstones on disk |
+| [03](docs/10-lab/03-load-test.md) | Load test: NoSQLBench, 10 000 ops on the Shortly tables |
 
 ## Run It
 
@@ -144,12 +145,14 @@ alerts today for device-6273: 4
 
 ```text
 cassandra-guide/
-├── docs/                   # 59 one-topic files
+├── docs/                   # 60 one-topic files
 ├── cql/schema.cql          # keyspaces + tables for both examples
 ├── cql/queries.cql         # queries to try in cqlsh
 ├── samples/CassandraDemo/  # .NET 10 console app (CassandraCSharpDriver)
 ├── samples/Shortly/        # .NET 10 Web API: controllers + repositories (INSERT/UPDATE/DELETE/BATCH/TTL)
 ├── docker-compose.yml          # single node
 ├── docker-compose.cluster.yml  # 5 nodes, dc1, seeds cass1 + cass2
+├── docker-compose.bench.yml    # NoSQLBench load test (Lab 03)
+├── bench/shortly.yaml          # NoSQLBench workload for the Shortly tables
 └── ROADMAP.md
 ```
