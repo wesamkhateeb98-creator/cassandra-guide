@@ -1,0 +1,69 @@
+# 5-node cluster · 1 datacenter (dc1) · seeds = cass1 + cass2
+# Run:  docker compose -f docker-compose.cluster.yml up -d
+# Nodes start one after another (depends_on → healthy): Cassandra rejects concurrent bootstraps.
+# Heap is 512M per node → ~1 GB RAM each, ~5 GB for the cluster.
+
+x-cassandra: &cassandra
+  image: cassandra:5.0
+  environment:
+    CASSANDRA_CLUSTER_NAME: guide-cluster-5
+    CASSANDRA_SEEDS: cass1,cass2
+    CASSANDRA_DC: dc1
+    CASSANDRA_RACK: r1
+    CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+    MAX_HEAP_SIZE: 512M
+    HEAP_NEWSIZE: 128M
+  healthcheck:
+    test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]
+    interval: 15s
+    timeout: 10s
+    retries: 30
+  networks: [cassandra-net]
+
+services:
+  cass1:                              # seed
+    <<: *cassandra
+    container_name: cass1
+    hostname: cass1
+    ports: ["9042:9042"]              # only entry point from the host
+    volumes:
+      - cass1-data:/var/lib/cassandra
+      - ./cql:/cql:ro
+
+  cass2:                              # seed
+    <<: *cassandra
+    container_name: cass2
+    hostname: cass2
+    volumes: [cass2-data:/var/lib/cassandra]
+    depends_on: { cass1: { condition: service_healthy } }
+
+  cass3:
+    <<: *cassandra
+    container_name: cass3
+    hostname: cass3
+    volumes: [cass3-data:/var/lib/cassandra]
+    depends_on: { cass2: { condition: service_healthy } }
+
+  cass4:
+    <<: *cassandra
+    container_name: cass4
+    hostname: cass4
+    volumes: [cass4-data:/var/lib/cassandra]
+    depends_on: { cass3: { condition: service_healthy } }
+
+  cass5:
+    <<: *cassandra
+    container_name: cass5
+    hostname: cass5
+    volumes: [cass5-data:/var/lib/cassandra]
+    depends_on: { cass4: { condition: service_healthy } }
+
+networks:
+  cassandra-net:
+
+volumes:
+  cass1-data:
+  cass2-data:
+  cass3-data:
+  cass4-data:
+  cass5-data:
