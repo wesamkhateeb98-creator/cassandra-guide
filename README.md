@@ -116,6 +116,7 @@ docker compose up -d                                   # Cassandra 5.0, single n
 docker compose exec cassandra cqlsh -f /cql/schema.cql # optional: the app also creates the schema
 docker compose exec cassandra cqlsh -f /cql/queries.cql  # Git Bash on Windows: prefix MSYS_NO_PATHCONV=1
 dotnet run --project samples/CassandraDemo
+dotnet run --project samples/Shortly                    # Web API on :5080 — see samples/Shortly/README.md
 ```
 
 ```text
@@ -135,6 +136,7 @@ cassandra-guide/
 ├── cql/schema.cql          # keyspaces + tables for both examples
 ├── cql/queries.cql         # queries to try in cqlsh
 ├── samples/CassandraDemo/  # .NET 10 console app (CassandraCSharpDriver)
+├── samples/Shortly/        # .NET 10 Web API: controllers + repositories (INSERT/UPDATE/DELETE/BATCH/TTL)
 ├── docker-compose.yml
 └── ROADMAP.md
 ```

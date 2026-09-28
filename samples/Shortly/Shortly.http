@@ -1,0 +1,28 @@
+@host = http://localhost:5080
+@userId = 3f1c2b7e-9a4d-4c61-8e2f-5b0a7d9c1e44
+# paste the slug returned by request 1
+@slug = REPLACE_ME
+
+### 1) Create — BATCH + INSERT + TTL (7 days)
+POST {{host}}/api/links
+Content-Type: application/json
+
+{ "userId": "{{userId}}", "url": "https://cassandra.apache.org", "ttlDays": 7 }
+
+### 2) User's links — SELECT one partition, newest first
+GET {{host}}/api/links?userId={{userId}}&limit=10
+
+### 3) Follow — SELECT + counter UPDATE → 302
+GET {{host}}/r/{{slug}}
+
+### 4) Stats — counter + TTL left
+GET {{host}}/api/links/{{slug}}/stats
+
+### 5) Update url — BATCH + UPDATE USING TTL
+PUT {{host}}/api/links/{{slug}}
+Content-Type: application/json
+
+{ "url": "https://cassandra.apache.org/doc/latest/" }
+
+### 6) Delete — BATCH + DELETE (tombstones)
+DELETE {{host}}/api/links/{{slug}}

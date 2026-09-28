@@ -56,6 +56,49 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<ICluster>().Connect())
 |---|---|
 | `new Cluster` per HTTP request → ~100 ms + new pools each time | 1 singleton, reused |
 
+## Session ≠ Connection
+
+`ISession` is **not** one connection. It owns one connection pool per node, and each connection multiplexes thousands of concurrent requests (stream IDs, up to 32 768 per connection on protocol v3+).
+
+```mermaid
+flowchart TD
+    CL["ICluster<br/>metadata · token map · policies"] --> S["ISession (1 per app)"]
+    S --> PA["Pool → Node A"]
+    S --> PB["Pool → Node B"]
+    S --> PC["Pool → Node C"]
+    PA --> A1["TCP conn 1"]
+    PA --> A2["TCP conn 2"]
+    PB --> B1["TCP conn 1"]
+    PC --> C1["TCP conn 1"]
+```
+
+| Object | Count | Role |
+|---|---|---|
+| `ICluster` | 1 | knows nodes, token ranges, policies |
+| `ISession` | 1 | routes each query, retries, caches prepared statements |
+| Pool | 1 per node | a few TCP connections |
+| TCP connection | a few per node | many in-flight requests (streams) |
+
+One `ExecuteAsync` call:
+1. Token of the partition key → replica (e.g. Node B).
+2. Least-busy connection in Node B's pool.
+3. Free stream ID → send → response. The connection stays open for the next request.
+
+```csharp
+// Pool size is tunable; the defaults are fine for most apps.
+Cluster.Builder()
+    .WithPoolingOptions(new PoolingOptions()
+        .SetCoreConnectionsPerHost(HostDistance.Local, 2)
+        .SetMaxConnectionsPerHost(HostDistance.Local, 4)
+        .SetMaxRequestsPerConnection(2048))
+```
+
+| ADO.NET / EF | Cassandra driver |
+|---|---|
+| `SqlConnection` | one TCP connection (hidden) |
+| hidden connection pool | `ISession` |
+| `DbContext` (scoped, per request) | no equivalent — nothing per request |
+
 ## Reference
 
 - [DataStax C# Driver](https://docs.datastax.com/en/developer/csharp-driver/latest/)
