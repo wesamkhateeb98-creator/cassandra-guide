@@ -13,7 +13,7 @@ One concept per file. Every file: **Problem Summary → Mermaid Diagram → Conc
 flowchart LR
     A[01 Basics] --> B[02 Architecture] --> C[03 Storage] --> D[04 Read / Write]
     D --> E[05 Cost] --> F[06 Modeling] --> G[07 CQL + .NET]
-    G --> H[08 Best Practices] --> I[09 Anti-Patterns]
+    G --> H[08 Best Practices] --> I[09 Anti-Patterns] --> J[10 Lab]
 ```
 
 ## 01 · Basics
@@ -109,6 +109,12 @@ flowchart LR
 | [07](docs/09-anti-patterns/07-secondary-index-misuse.md) | Secondary index as primary access path |
 | [08](docs/09-anti-patterns/08-relational-thinking.md) | Normalize + join + `COUNT(*)` |
 
+## 10 · Lab
+| File | Topic |
+|---|---|
+| [01](docs/10-lab/01-five-node-cluster.md) | Run a 5-node cluster: seeds, RF 3, kill a replica, `QUORUM` vs `ALL` |
+| [02](docs/10-lab/02-monitor-performance.md) | Monitor: `TRACING ON`, size per node, tombstones on disk |
+
 ## Run It
 
 ```bash
@@ -117,6 +123,12 @@ docker compose exec cassandra cqlsh -f /cql/schema.cql # optional: the app also 
 docker compose exec cassandra cqlsh -f /cql/queries.cql  # Git Bash on Windows: prefix MSYS_NO_PATHCONV=1
 dotnet run --project samples/CassandraDemo
 dotnet run --project samples/Shortly                    # Web API on :5080 — see samples/Shortly/README.md
+```
+
+5-node cluster instead of the single node: [Lab 01](docs/10-lab/01-five-node-cluster.md)
+
+```bash
+docker compose down && docker compose -f docker-compose.cluster.yml up -d
 ```
 
 ```text
@@ -132,11 +144,12 @@ alerts today for device-6273: 4
 
 ```text
 cassandra-guide/
-├── docs/                   # 57 one-topic files
+├── docs/                   # 59 one-topic files
 ├── cql/schema.cql          # keyspaces + tables for both examples
 ├── cql/queries.cql         # queries to try in cqlsh
 ├── samples/CassandraDemo/  # .NET 10 console app (CassandraCSharpDriver)
 ├── samples/Shortly/        # .NET 10 Web API: controllers + repositories (INSERT/UPDATE/DELETE/BATCH/TTL)
-├── docker-compose.yml
+├── docker-compose.yml          # single node
+├── docker-compose.cluster.yml  # 5 nodes, dc1, seeds cass1 + cass2
 └── ROADMAP.md
 ```
