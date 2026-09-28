@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="CassandraCSharpDriver" Version="3.23.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
   </ItemGroup>
 
   <ItemGroup>

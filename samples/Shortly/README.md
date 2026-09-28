@@ -67,7 +67,7 @@ sequenceDiagram
 docker compose up -d                       # from cassandra-guide/
 dotnet run --project samples/Shortly       # http://localhost:5080, schema created on start
 ```
-Then send the requests in [Shortly.http](Shortly.http) in order (paste the `slug` from request 1).
+Then open **http://localhost:5080/swagger** (Swagger UI), or send the requests in [Shortly.http](Shortly.http) in order (paste the `slug` from request 1).
 
 ```bash
 curl -s -X POST localhost:5080/api/links -H "Content-Type: application/json" \

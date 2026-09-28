@@ -11,12 +11,14 @@ public static class CassandraSetup
     public static Task<ISession> ConnectAsync(IConfiguration configuration) =>
         BuildCluster(
             configuration["Cassandra:Host"] ?? "127.0.0.1",
+            configuration.GetValue("Cassandra:Port", 9042),
             configuration["Cassandra:LocalDc"] ?? "dc1")
         .ConnectAsync();
 
-    private static ICluster BuildCluster(string host, string localDc) =>
+    private static ICluster BuildCluster(string host, int port, string localDc) =>
         Cluster.Builder()
             .AddContactPoint(host)
+            .WithPort(port)
             .WithLoadBalancingPolicy(new DefaultLoadBalancingPolicy(localDc))
             .WithQueryOptions(new QueryOptions().SetConsistencyLevel(ConsistencyLevel.LocalQuorum))
             .Build();

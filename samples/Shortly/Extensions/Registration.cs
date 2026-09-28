@@ -18,6 +18,14 @@ public static class Registration
             .AddSingleton<IClickRepository>(await ClickRepository.CreateAsync(session));
     }
 
+    // OpenAPI document at /openapi/v1.json, browsed through Swagger UI at /swagger.
+    public static WebApplication MapApiDocs(this WebApplication app)
+    {
+        app.MapOpenApi();
+        app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Shortly v1"));
+        return app;
+    }
+
     // Instances passed to AddSingleton(obj) are not disposed by the container — close the pools ourselves.
     public static WebApplication CloseCassandraOnStop(this WebApplication app)
     {
