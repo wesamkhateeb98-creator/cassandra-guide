@@ -4,16 +4,16 @@
 
 ## Problem Summary
 
-One trace shows the cost of one query; a load test shows throughput and tail latency under 10 000 operations. [`docker-compose.bench.yml`](../../docker-compose.bench.yml) runs NoSQLBench with the workload [`bench/shortly.yaml`](../../bench/shortly.yaml) against the Shortly tables.
+One trace shows the cost of one query; a load test shows throughput and tail latency under 10 000 operations. [`docker/bench/compose.yml`](../../docker/bench/compose.yml) runs NoSQLBench with the workload [`docker/bench/shortly.yaml`](../../docker/bench/shortly.yaml) against the Shortly tables.
 
 ## Mermaid Diagram
 
 ```mermaid
 flowchart LR
-    W["bench/shortly.yaml<br/>bindings + CQL ops"] -->|"/workloads"| NB["nb container<br/>nosqlbench/nosqlbench"]
+    W["docker/bench/shortly.yaml<br/>bindings + CQL ops"] -->|"/workloads"| NB["nb container<br/>nosqlbench/nosqlbench"]
     NB -->|"network cassandra-guide_cassandra-net"| C1["cass1 (coordinator)"]
     C1 --> R["cass2 … cass5 (replicas)"]
-    NB -->|"--report-csv-to"| O["bench/results/*.csv"]
+    NB -->|"--report-csv-to"| O["docker/bench/results/*.csv"]
     NB -->|"--report-summary-to"| S["stdout: ops/s · p50 · p99"]
 ```
 
@@ -57,17 +57,17 @@ read:  cycle 7  → idx = Hash(7) mod 10000 = 42 → slug = Hash(42)   ✅ hits 
 ### 3 · Run
 
 ```bash
-docker compose -f docker-compose.cluster.yml up -d          # cluster first (Lab 01)
+docker compose -f docker/cluster/compose.yml up -d          # cluster first (Lab 01)
 
-docker compose -f docker-compose.bench.yml run --rm nb      # scenario "slug", 10k + 10k
-docker compose -f docker-compose.bench.yml run --rm nb /workloads/shortly.yaml user   host=cass1 localdc=dc1
-docker compose -f docker-compose.bench.yml run --rm nb /workloads/shortly.yaml clicks host=cass1 localdc=dc1 cycles=50000
+docker compose -f docker/bench/compose.yml run --rm nb      # scenario "slug", 10k + 10k
+docker compose -f docker/bench/compose.yml run --rm nb /workloads/shortly.yaml user   host=cass1 localdc=dc1
+docker compose -f docker/bench/compose.yml run --rm nb /workloads/shortly.yaml clicks host=cass1 localdc=dc1 cycles=50000
 ```
 
 Single node instead of the cluster:
 
 ```bash
-NB_NETWORK=cassandra-guide_default docker compose -f docker-compose.bench.yml run --rm nb \
+NB_NETWORK=cassandra-single-net docker compose -f docker/bench/compose.yml run --rm nb \
   /workloads/shortly.yaml slug host=cassandra localdc=dc1
 ```
 
@@ -110,7 +110,7 @@ TRUNCATE shortly.link_clicks;
 |---|---|
 | `network … not found` | cluster not running, or single node → set `NB_NETWORK` |
 | `NoNodeAvailable` / connection refused | wait for all nodes `healthy`; check `host=` |
-| binding / function not found | NoSQLBench version changed a function name → adjust `bench/shortly.yaml` |
+| binding / function not found | NoSQLBench version changed a function name → adjust `docker/bench/shortly.yaml` |
 | container killed | RAM: 5 nodes + NoSQLBench → run the cluster with 3 nodes |
 
 ## Reference

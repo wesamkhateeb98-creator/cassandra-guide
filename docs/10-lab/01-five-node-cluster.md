@@ -4,7 +4,7 @@
 
 ## Problem Summary
 
-A single node hides replication, coordinators and failures. [`docker-compose.cluster.yml`](../../docker-compose.cluster.yml) starts 5 nodes in one datacenter (`dc1`) with `cass1` + `cass2` as seeds, so every one of those becomes observable.
+A single node hides replication, coordinators and failures. [`docker/cluster/compose.yml`](../../docker/cluster/compose.yml) starts 5 nodes in one datacenter (`dc1`) with `cass1` + `cass2` as seeds, so every one of those becomes observable.
 
 ## Mermaid Diagram
 
@@ -36,9 +36,9 @@ flowchart LR
 ### 1 · Start
 
 ```bash
-docker compose down                                   # free :9042 from the single-node setup
-docker compose -f docker-compose.cluster.yml up -d    # ~5–8 min, nodes join one by one
-docker compose -f docker-compose.cluster.yml ps       # wait for 5 × "healthy"
+docker compose -f docker/single/compose.yml down   # free :9042 from the single-node setup
+docker compose -f docker/cluster/compose.yml up -d    # ~5–8 min, nodes join one by one
+docker compose -f docker/cluster/compose.yml ps       # wait for 5 × "healthy"
 docker logs -f cass3                                  # "... state jump to NORMAL" = joined
 ```
 
@@ -124,13 +124,13 @@ docker start cass3        # back to UN in ~1 min; missed writes arrive via hinte
 ### 6 · Stop
 
 ```bash
-docker compose -f docker-compose.cluster.yml stop      # keep data
-docker compose -f docker-compose.cluster.yml down -v   # wipe all 5 volumes
+docker compose -f docker/cluster/compose.yml stop      # keep data
+docker compose -f docker/cluster/compose.yml down -v   # wipe all 5 volumes
 ```
 
 | Problem | Fix |
 |---|---|
-| `port is already allocated` | single-node still running → `docker compose down` |
+| `port is already allocated` | single node still running → `docker compose -f docker/single/compose.yml down` |
 | node stuck in `health: starting` > 5 min | `docker logs cassN` |
 | `Exited (137)` | out of RAM → raise Docker memory or run `up -d cass1 cass2 cass3` |
 | driver warns it can't reach `172.20.x.x` | expected on Docker Desktop: the host only reaches `cass1`, which coordinates for the rest |

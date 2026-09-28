@@ -1,3 +1,7 @@
+# Single node · dc1 · port 9042
+# Run from the repo root:  docker compose -f docker/single/compose.yml up -d
+name: cassandra-single
+
 services:
   cassandra:
     image: cassandra:5.0
@@ -12,13 +16,19 @@ services:
       MAX_HEAP_SIZE: 1G
       HEAP_NEWSIZE: 200M
     volumes:
-      - ./cql:/cql:ro
+      - ../../cql:/cql:ro
       - cassandra-data:/var/lib/cassandra
+    networks: [cassandra-net]
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]
       interval: 15s
       timeout: 10s
       retries: 20
 
+networks:
+  cassandra-net:
+    name: cassandra-single-net            # joined by docker/bench (NB_NETWORK)
+
 volumes:
   cassandra-data:
+    name: cassandra-guide_cassandra-data  # same volume as before the move → data kept

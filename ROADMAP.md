@@ -18,7 +18,7 @@ flowchart LR
 
 | # | Item | Output | Value |
 |---:|---|---|---|
-| 1 | **3-node cluster lab** (`docker-compose.cluster.yml`, 3 racks) | stop a node, show `QUORUM` ✅ vs `ALL` ❌, hints replay | architecture becomes observable |
+| 1 | **3-node cluster lab** (`docker/cluster/compose.yml`, 3 racks) | stop a node, show `QUORUM` ✅ vs `ALL` ❌, hints replay | architecture becomes observable |
 | 2 | **`TRACING ON` evidence** per operation | real trace output in 04-read-write + 05-cost | replaces indicative numbers with measured ones |
 | 3 | **Integration tests** (xUnit + Testcontainers.Cassandra) | one test per best practice / anti-pattern | proves every claim |
 | 4 | **Benchmarks** (`cassandra-stress` / NoSQLBench) | ops/s + p99 table: insert vs select vs LWT vs batch | numeric cost ranking |

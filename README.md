@@ -119,17 +119,17 @@ flowchart LR
 ## Run It
 
 ```bash
-docker compose up -d                                   # Cassandra 5.0, single node, dc1
-docker compose exec cassandra cqlsh -f /cql/schema.cql # optional: the app also creates the schema
-docker compose exec cassandra cqlsh -f /cql/queries.cql  # Git Bash on Windows: prefix MSYS_NO_PATHCONV=1
+docker compose -f docker/single/compose.yml up -d      # Cassandra 5.0, single node, dc1
+docker exec cassandra cqlsh -f /cql/schema.cql         # optional: the app also creates the schema
+docker exec cassandra cqlsh -f /cql/queries.cql        # Git Bash on Windows: prefix MSYS_NO_PATHCONV=1
 dotnet run --project samples/CassandraDemo
 dotnet run --project samples/Shortly                    # Web API on :5080 — see samples/Shortly/README.md
 ```
 
-5-node cluster instead of the single node: [Lab 01](docs/10-lab/01-five-node-cluster.md)
+5-node cluster instead of the single node: [Lab 01](docs/10-lab/01-five-node-cluster.md) · all stacks: [docker/README.md](docker/README.md)
 
 ```bash
-docker compose down && docker compose -f docker-compose.cluster.yml up -d
+docker compose -f docker/single/compose.yml down && docker compose -f docker/cluster/compose.yml up -d
 ```
 
 ```text
@@ -150,9 +150,9 @@ cassandra-guide/
 ├── cql/queries.cql         # queries to try in cqlsh
 ├── samples/CassandraDemo/  # .NET 10 console app (CassandraCSharpDriver)
 ├── samples/Shortly/        # .NET 10 Web API: controllers + repositories (INSERT/UPDATE/DELETE/BATCH/TTL)
-├── docker-compose.yml          # single node
-├── docker-compose.cluster.yml  # 5 nodes, dc1, seeds cass1 + cass2
-├── docker-compose.bench.yml    # NoSQLBench load test (Lab 03)
-├── bench/shortly.yaml          # NoSQLBench workload for the Shortly tables
+├── docker/                 # one folder per stack — see docker/README.md
+│   ├── single/compose.yml  # 1 node
+│   ├── cluster/compose.yml # 5 nodes, dc1, seeds cass1 + cass2
+│   └── bench/              # NoSQLBench: compose.yml + shortly.yaml (Lab 03)
 └── ROADMAP.md
 ```

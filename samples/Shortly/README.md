@@ -64,7 +64,7 @@ sequenceDiagram
 
 ## Run
 ```bash
-docker compose up -d                       # from cassandra-guide/
+docker compose -f docker/single/compose.yml up -d   # from cassandra-guide/
 dotnet run --project samples/Shortly       # http://localhost:5080, schema created on start
 ```
 Then open **http://localhost:5080/swagger** (Swagger UI), or send the requests in [Shortly.http](Shortly.http) in order (paste the `slug` from request 1).

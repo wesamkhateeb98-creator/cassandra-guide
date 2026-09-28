@@ -6,4 +6,4 @@ obj/
 .DS_Store
 
 # NoSQLBench output
-bench/results/
+docker/bench/results/

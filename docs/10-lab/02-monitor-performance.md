@@ -23,7 +23,7 @@ flowchart TD
 ### 1 · One query — `TRACING ON`
 
 ```bash
-docker exec -it cass1 cqlsh          # single node: docker compose exec cassandra cqlsh
+docker exec -it cass1 cqlsh          # single node: docker exec -it cassandra cqlsh
 ```
 
 ```sql

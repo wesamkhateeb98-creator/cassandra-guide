@@ -1,4 +1,4 @@
--- Run: docker compose exec cassandra cqlsh -f /cql/queries.cql
+-- Run: docker exec -it cassandra cqlsh -f /cql/queries.cql
 
 -- ---------- Chat ----------
 INSERT INTO chat.messages_by_conversation (conversation_id, bucket, message_id, sender_id, body)

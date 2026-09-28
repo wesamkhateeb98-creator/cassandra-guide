@@ -1,8 +1,12 @@
 # 5-node cluster · 1 datacenter (dc1) · seeds = cass1 + cass2
-# Run:  docker compose -f docker-compose.cluster.yml up -d
+# Run from the repo root:  docker compose -f docker/cluster/compose.yml up -d
 # Guide: docs/10-lab/01-five-node-cluster.md · monitoring: docs/10-lab/02-monitor-performance.md
 # Nodes start one after another (depends_on → healthy): Cassandra rejects concurrent bootstraps.
 # Heap is 512M per node → ~1 GB RAM each, ~5 GB for the cluster.
+
+# Project name kept from when this file lived at the repo root, so the running
+# containers, the network (cassandra-guide_cassandra-net) and the volumes are reused.
+name: cassandra-guide
 
 x-cassandra: &cassandra
   image: cassandra:5.0
@@ -29,7 +33,7 @@ services:
     ports: ["9042:9042"]              # only entry point from the host
     volumes:
       - cass1-data:/var/lib/cassandra
-      - ./cql:/cql:ro
+      - ../../cql:/cql:ro
 
   cass2:                              # seed
     <<: *cassandra
